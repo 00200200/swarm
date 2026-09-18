@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Set, Tuple
 
 import pytest
 
@@ -65,14 +65,16 @@ def test_builtin_collection_annotations():
 
 
 def test_generic_collection_annotations():
-    def collect_items(values: List[str], mapping: Dict[str, int], tags: list[str]):
-        return values, mapping, tags
+    def collect_items(values: List[str], mapping: Dict[str, int], tags: list[str], coords: Tuple[int, int], unique: Set[str]):
+        return values, mapping, tags, coords, unique
 
     result = function_to_json(collect_items)
     properties = result["function"]["parameters"]["properties"]
     assert properties["values"] == {"type": "array"}
     assert properties["mapping"] == {"type": "object"}
     assert properties["tags"] == {"type": "array"}
+    assert properties["coords"] == {"type": "array"}
+    assert properties["unique"] == {"type": "array"}
 
 
 def test_unknown_annotation_raises_keyerror():
@@ -84,3 +86,11 @@ def test_unknown_annotation_raises_keyerror():
 
     with pytest.raises(KeyError, match="Unknown type annotation"):
         function_to_json(handle_payload)
+
+def test_any_annotation():
+    from typing import Any
+    def process(payload: Any):
+        pass
+
+    result = function_to_json(process)
+    assert result["function"]["parameters"]["properties"]["payload"] == {"type": "string"}

@@ -1,6 +1,6 @@
 import inspect
 from datetime import datetime
-from typing import get_origin
+from typing import get_origin, Any
 
 
 def debug_print(debug: bool, *args: str) -> None:
@@ -49,6 +49,9 @@ def function_to_json(func) -> dict:
         list: "array",
         dict: "object",
         type(None): "null",
+        set: "array",
+        tuple: "array",
+        Any: "string",
     }
 
     def json_type_for_annotation(annotation, param_name: str) -> str:
