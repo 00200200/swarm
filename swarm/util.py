@@ -1,5 +1,6 @@
 import inspect
 from datetime import datetime
+from typing import get_origin
 
 
 def debug_print(debug: bool, *args: str) -> None:
@@ -50,6 +51,18 @@ def function_to_json(func) -> dict:
         type(None): "null",
     }
 
+    def json_type_for_annotation(annotation, param_name: str) -> str:
+        if annotation is inspect.Parameter.empty:
+            return "string"
+
+        mapped_type = get_origin(annotation) or annotation
+        try:
+            return type_map[mapped_type]
+        except KeyError as e:
+            raise KeyError(
+                f"Unknown type annotation {annotation} for parameter {param_name}: {str(e)}"
+            ) from None
+
     try:
         signature = inspect.signature(func)
     except ValueError as e:
@@ -59,13 +72,9 @@ def function_to_json(func) -> dict:
 
     parameters = {}
     for param in signature.parameters.values():
-        try:
-            param_type = type_map.get(param.annotation, "string")
-        except KeyError as e:
-            raise KeyError(
-                f"Unknown type annotation {param.annotation} for parameter {param.name}: {str(e)}"
-            )
-        parameters[param.name] = {"type": param_type}
+        parameters[param.name] = {
+            "type": json_type_for_annotation(param.annotation, param.name)
+        }
 
     required = [
         param.name

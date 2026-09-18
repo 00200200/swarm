@@ -1,3 +1,7 @@
+from typing import Dict, List
+
+import pytest
+
 from swarm.util import function_to_json
 
 
@@ -48,3 +52,35 @@ def test_complex_function():
             },
         },
     }
+
+
+def test_builtin_collection_annotations():
+    def collect_items(values: list, mapping: dict):
+        return values, mapping
+
+    result = function_to_json(collect_items)
+    properties = result["function"]["parameters"]["properties"]
+    assert properties["values"] == {"type": "array"}
+    assert properties["mapping"] == {"type": "object"}
+
+
+def test_generic_collection_annotations():
+    def collect_items(values: List[str], mapping: Dict[str, int], tags: list[str]):
+        return values, mapping, tags
+
+    result = function_to_json(collect_items)
+    properties = result["function"]["parameters"]["properties"]
+    assert properties["values"] == {"type": "array"}
+    assert properties["mapping"] == {"type": "object"}
+    assert properties["tags"] == {"type": "array"}
+
+
+def test_unknown_annotation_raises_keyerror():
+    class Payload:
+        pass
+
+    def handle_payload(payload: Payload):
+        return payload
+
+    with pytest.raises(KeyError, match="Unknown type annotation"):
+        function_to_json(handle_payload)
