@@ -1,6 +1,7 @@
 import inspect
+import types
 from datetime import datetime
-from typing import get_origin, Any
+from typing import Any, Literal, Union, get_args, get_origin
 
 
 def debug_print(debug: bool, *args: str) -> None:
@@ -58,7 +59,18 @@ def function_to_json(func) -> dict:
         if annotation is inspect.Parameter.empty:
             return "string"
 
-        mapped_type = get_origin(annotation) or annotation
+        origin = get_origin(annotation)
+
+        if origin in (Union, types.UnionType):
+            members = [a for a in get_args(annotation) if a is not type(None)]
+            if len(members) == 1:
+                return json_type_for_annotation(members[0], param_name)
+            return "string"
+
+        if origin is Literal:
+            return "string"
+
+        mapped_type = origin or annotation
         try:
             return type_map[mapped_type]
         except KeyError as e:

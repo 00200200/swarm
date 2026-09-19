@@ -1,4 +1,4 @@
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Literal, Optional, Set, Tuple, Union
 
 import pytest
 
@@ -94,3 +94,24 @@ def test_any_annotation():
 
     result = function_to_json(process)
     assert result["function"]["parameters"]["properties"]["payload"] == {"type": "string"}
+
+
+def test_optional_and_union_annotations():
+    def fetch(
+        city: str,
+        unit: Optional[str] = None,
+        limit: Optional[int] = None,
+        tags: Optional[List[str]] = None,
+        mixed: Union[int, str] = 1,
+        modern: str | None = None,
+        mode: Literal["a", "b"] = "a",
+    ):
+        pass
+
+    properties = function_to_json(fetch)["function"]["parameters"]["properties"]
+    assert properties["unit"] == {"type": "string"}
+    assert properties["limit"] == {"type": "integer"}
+    assert properties["tags"] == {"type": "array"}
+    assert properties["mixed"] == {"type": "string"}
+    assert properties["modern"] == {"type": "string"}
+    assert properties["mode"] == {"type": "string"}
